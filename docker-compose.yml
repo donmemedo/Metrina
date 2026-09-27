@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    ports: ["${API_PORT:-8009}:8000"]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
+    ports: ["${WEB_PORT:-3009}:3000"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
