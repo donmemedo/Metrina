@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.13.16-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip pip install --timeout 60 --retries 10 -r requirements.txt
