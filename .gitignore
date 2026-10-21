@@ -4,6 +4,13 @@ node_modules/
 __pycache__/
 next-env.d.ts
 *.tsbuildinfo
+.env
+.env.*
+!.env.example
+graphify-out/cache/
 
-docs
+# business-plan PDFs/Word files stay local; markdown docs are tracked
+docs/*
+!docs/*.md
+!docs/evidence/
 .idea

@@ -1,0 +1,8 @@
+=== npm audit (prod) ===
+high     next 16.0.0 - 16.3.7  direct=True fix=next@16.4.2
+         via: Next.js: Pending `use cache` fill can leak Draft Mode content into regular responses and persisted pages (GHSA-3w37-wq28-93x7); Next.js has cache poisoning of SSG and ISR pages in self-hosted applications (GHSA-4jqv-mc3x-m676); Next.js has information disclosure in development server's Model Context Protocol endpoint (GHSA-39w2-rjm5-chcv); Next.js has information disclosure in App Router metadata image routes via dynamicParams bypass (GHSA-f87g-xv8r-7p7x); Next.js has cache poisoning in SSG/ISR rendering that leads to cross-user content substitution and persistent denial of service (GHSA-mcj8-r9mp-w47p); Next.js has Server-Side Request Forgery in Image Optimization (GHSA-cjq9-62q9-8jv4)
+high     sharp <0.35.5  direct=False fix=True
+         via: sharp : Vulnerability in librsvg dependency CVE-2026-96889 (GHSA-wq5f-xc86-pv6w)
+high     source-map-js 1.0.0 - 1.2.1  direct=False fix=True
+         via: source-map-js allows event-loop denial of service through indexed source-map section offsets (GHSA-68fv-2mgg-jv7q)
+{'info': 0, 'low': 0, 'moderate': 0, 'high': 3, 'critical': 0, 'total': 3}
