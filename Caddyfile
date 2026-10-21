@@ -22,19 +22,13 @@
 
 	respond /healthz 200
 
-	# Beacon collector and tracker script: public by design, no token.
-	@collect path /api/track /tracker.js
-	handle @collect {
+	# API and tracker. No credentials are added here: the bundled dashboard is public, and injecting a token for every
+	# visitor would only make the token look like protection. A client that has its own API_TOKEN sends it, unchanged.
+	# To protect the dashboard, put real authentication in front first (docs/runbook.md).
+	@backend path /api/* /tracker.js
+	handle @backend {
 		reverse_proxy backend:8000 {
 			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	# Dashboard and tools API: the bearer token (if API_TOKEN is set) is added here, server-side, never in the browser.
-	handle /api/* {
-		reverse_proxy backend:8000 {
-			header_up X-Forwarded-For {remote_host}
-			header_up Authorization "Bearer {$API_TOKEN:}"
 		}
 	}
 

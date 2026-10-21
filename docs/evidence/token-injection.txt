@@ -1,3 +1,6 @@
+# WITHDRAWN DESIGN. Verified working, then removed: an automated review flagged it as a confused deputy.
+# The line 'via Next, browser sends bad token: 200' is the problem: any visitor inherits the token's access.
+# Kept as evidence. The token now protects server-to-server callers only; see docs/threat-model.md (T4).
 # API_TOKEN=s3cret-token on both servers
 direct to API, no token            : 401
 direct to API, wrong token         : 401

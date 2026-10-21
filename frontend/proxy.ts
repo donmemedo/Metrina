@@ -1,18 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const dev = process.env.NODE_ENV === "development";
-const TOKEN = process.env.API_TOKEN; // server-side only, never NEXT_PUBLIC_*: it is added to proxied API calls, not to pages
 
-/** Pages get a fresh CSP nonce; /api/* gets the bearer token (when one is configured) before the rewrite to the backend. */
+/** Every page response gets a fresh CSP nonce. /api/* is not touched: it is rewritten straight to the backend. */
 export function proxy(req: NextRequest) {
-  const headers = new Headers(req.headers);
-
-  if (req.nextUrl.pathname.startsWith("/api/")) {
-    headers.delete("authorization"); // never forward what the browser sent
-    if (TOKEN) headers.set("authorization", `Bearer ${TOKEN}`);
-    return NextResponse.next({ request: { headers } });
-  }
-
   const nonce = btoa(crypto.randomUUID());
   const csp = [
     "default-src 'self'",
@@ -28,6 +19,7 @@ export function proxy(req: NextRequest) {
     "frame-ancestors 'none'",
   ].join("; ");
 
+  const headers = new Headers(req.headers);
   headers.set("x-nonce", nonce);
   headers.set("content-security-policy", csp);
   const res = NextResponse.next({ request: { headers } });
@@ -38,7 +30,7 @@ export function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: "/((?!_next/static|_next/image|favicon.ico|icon.svg|tracker.js).*)",
+      source: "/((?!api|_next/static|_next/image|favicon.ico|icon.svg|tracker.js).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },
