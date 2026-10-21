@@ -26,8 +26,8 @@ export default function PostPage() {
     return (
       <>
         {back}
-        {error != null && <div className="banner">{t.offline}</div>}
-        <div className="grid"><div className="skel s12" style={{ height: 160 }} /><div className="skel s12" style={{ height: 380 }} /></div>
+        {error != null && <div className="banner" role="alert">{t.offline}</div>}
+        <div className="grid" aria-busy="true"><p className="sr-only" role="status">{t.loading}</p><div className="skel s12" style={{ height: 160 }} /><div className="skel s12" style={{ height: 380 }} /></div>
       </>
     );
 
@@ -41,7 +41,7 @@ export default function PostPage() {
   return (
     <div className="story">
       {back}
-      {error != null && <div className="banner">{t.offline}</div>}
+      {error != null && <div className="banner" role="alert">{t.offline}</div>}
       <div className="grid">
         <section className="card s12 rise" style={vars({ "--i": 0 })}>
           <div className="meta">
@@ -80,7 +80,7 @@ export default function PostPage() {
               <span><i className="dash" style={{ color: "var(--purple)" }} />{t.forecast}</span>
             </div>
           </div>
-          <Area labels={labels}
+          <Area labels={labels} name={t.lifecycle}
             band={{ lo: joined(p.low), hi: joined(p.high), color: "var(--purple)" }}
             lines={[
               { data: [...p.history, ...pad(24)], color: "var(--blue)", label: t.actual, fill: true },

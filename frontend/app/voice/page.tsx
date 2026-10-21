@@ -49,6 +49,7 @@ export default function Voice() {
           </div>
         </section>
 
+        <p className="sr-only" role="status">{state === "busy" ? t.loading : res ? `${t.sentiment}: ${mood}` : ""}</p>
         {res && (
           <>
             <section className="card s5 rise" style={{ "--i": 0 } as CSSProperties}>

@@ -1,0 +1,46 @@
+# The edge: the only thing published to the host. It owns the client address, timeouts and body limits,
+# so the API can trust X-Forwarded-For (TRUST_PROXY=1) and nothing else can reach backend or frontend.
+{
+	admin off
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 15s
+			write 30s
+			idle 60s
+		}
+	}
+}
+
+# SITE_ADDRESS=:8080 serves plain HTTP (local demo). Set a real domain to get automatic HTTPS + HSTS.
+{$SITE_ADDRESS::8080} {
+	encode zstd gzip
+	request_body {
+		max_size 1MB
+	}
+	header -Server
+
+	respond /healthz 200
+
+	# Beacon collector and tracker script: public by design, no token.
+	@collect path /api/track /tracker.js
+	handle @collect {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Dashboard and tools API: the bearer token (if API_TOKEN is set) is added here, server-side, never in the browser.
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+			header_up Authorization "Bearer {$API_TOKEN:}"
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:3000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+}

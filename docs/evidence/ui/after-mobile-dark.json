@@ -1,0 +1,30 @@
+{
+ "url": "http://127.0.0.1:3737/",
+ "viewport": "390x844",
+ "flags": [
+  "--dark",
+  "--mobile",
+  "--measure=3"
+ ],
+ "cpu": {
+  "window_s": 3,
+  "task_ms_per_s": 293.6,
+  "script_ms_per_s": 28.1,
+  "layout_ms_per_s": 32.4,
+  "style_ms_per_s": 9.2
+ },
+ "targets": 21,
+ "small": [],
+ "lowContrast": [],
+ "landmarks": {
+  "nav": 2,
+  "navLabelled": 2,
+  "main": 1,
+  "current": 2,
+  "live": 1,
+  "skip": 1
+ },
+ "backdropLayers": 2,
+ "infiniteAnims": 0,
+ "consoleProblems": []
+}

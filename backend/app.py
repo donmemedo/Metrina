@@ -62,7 +62,7 @@ TITLES = {
 
 
 def make_posts(start):
-    rnd, posts = random.Random(7), {}
+    rnd, posts = random.Random(7), {}  # nosec B311: seeded demo data, not a secret
     for sec, items in TITLES.items():
         for fa, en in items:
             pid = f"p{len(posts) + 1}"
@@ -129,8 +129,8 @@ def simulate(seconds, b, now=None):
     now = now or time.time()
     for p in POSTS.values():
         rate = model(p, (now - p["published"]) / 3600) * season(now) / 3600 * seconds
-        for _ in range(int(rate) + (random.random() < rate % 1)):
-            record(b, p["id"], random.choices(REFERRERS, p["refs"])[0], random.choices(DEVICES, (62, 33, 5))[0])
+        for _ in range(int(rate) + (random.random() < rate % 1)):  # nosec B311: synthetic demo traffic
+            record(b, p["id"], random.choices(REFERRERS, p["refs"])[0], random.choices(DEVICES, (62, 33, 5))[0])  # nosec B311
 
 
 def evict():

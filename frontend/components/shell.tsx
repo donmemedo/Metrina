@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { dict, makeFmt, type Dict, type Fmt, type Lang, type Theme } from "@/lib/i18n";
 
@@ -12,24 +12,48 @@ export const useApp = () => useContext(AppCtx);
 const save = (k: string, v: string) => (document.cookie = `${k}=${v};path=/;max-age=31536000;samesite=lax`);
 const calm = () => !document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** Poll `url` every `ms`. Backs off 2x per failure up to 30 s, pauses in hidden tabs, refreshes the moment the tab returns, stops on 404. */
 export function usePoll<T>(url: string, ms: number) {
   const [data, setData] = useState<T>();
   const [error, setError] = useState<number | null>(null); // HTTP status, 0 = network
   useEffect(() => {
-    let alive = true;
-    const load = () =>
-      fetch(url)
-        .then(async (r) => {
-          if (!r.ok) throw r.status;
-          const j = await r.json();
-          if (alive) (setData(j), setError(null));
-        })
-        .catch((e) => alive && setError(typeof e === "number" ? e : 0));
-    load();
-    const id = setInterval(() => !document.hidden && load(), ms);
-    return () => ((alive = false), clearInterval(id));
+    let alive = true, fails = 0, timer: ReturnType<typeof setTimeout>;
+    const ctl = new AbortController();
+    const tick = async () => {
+      if (document.hidden) return next();
+      let stop = false;
+      try {
+        const r = await fetch(url, { signal: ctl.signal });
+        if (!r.ok) throw r.status;
+        const j = await r.json();
+        if (alive) (setData(j), setError(null));
+        fails = 0;
+      } catch (e) {
+        if (!alive) return;
+        fails++;
+        setError(typeof e === "number" ? e : 0);
+        stop = e === 404;
+      }
+      if (!stop) next();
+    };
+    const next = () => alive && (timer = setTimeout(tick, Math.min(ms * 2 ** fails, 30000)));
+    const wake = () => !document.hidden && (clearTimeout(timer), tick());
+    document.addEventListener("visibilitychange", wake);
+    tick();
+    return () => ((alive = false), ctl.abort(), clearTimeout(timer), document.removeEventListener("visibilitychange", wake));
   }, [url, ms]);
   return { data, error };
+}
+
+/** `v`, but changes at most once per `ms`: for screen-reader announcements that must not fire on every poll. */
+export function useSlow<T>(v: T, ms: number) {
+  const [s, set] = useState(v);
+  const last = useRef(0);
+  useEffect(() => {
+    if (v == null) return;
+    if (s == null || Date.now() - last.current >= ms) (last.current = Date.now(), set(v));
+  }, [v, ms, s]);
+  return s;
 }
 
 const PATHS = {
@@ -111,21 +135,22 @@ export function Shell({ lang: lang0, theme: theme0, children }: { lang: Lang; th
 
   return (
     <AppCtx.Provider value={value}>
+      <a className="skip" href="#main">{t.skip}</a>
       <header className="top wrap">
         <div className="bar">
           <Link href="/" className="brand" aria-label={t.brand}>
             <span className="logo"><Icon name="leaf" size={18} /></span>
             <b>{t.brand}</b>
           </Link>
-          <nav className="seg nav">
+          <nav className="seg nav" aria-label={t.nav_label}>
             {NAV.map(([href, icon, key]) => (
-              <Link key={href} href={href} className={on(href) ? "on" : ""}>
+              <Link key={href} href={href} className={on(href) ? "on" : ""} aria-current={on(href) ? "page" : undefined}>
                 <Icon name={icon} size={16} />{t[key]}
               </Link>
             ))}
           </nav>
           <div className="controls">
-            <button className="pill-btn" onClick={() => value.setLang(lang === "fa" ? "en" : "fa")} aria-label={t.language}>
+            <button className="pill-btn" onClick={() => value.setLang(lang === "fa" ? "en" : "fa")} lang={lang === "fa" ? "en" : "fa"} aria-label={lang === "fa" ? "English" : "فارسی"}>
               <Icon name="globe" size={16} />{lang === "fa" ? "EN" : "فا"}
             </button>
             <div className="seg" role="radiogroup" aria-label={t.theme}>
@@ -139,10 +164,10 @@ export function Shell({ lang: lang0, theme: theme0, children }: { lang: Lang; th
           </div>
         </div>
       </header>
-      <main className="wrap">{children}</main>
-      <nav className="tabbar">
+      <main className="wrap" id="main" tabIndex={-1}>{children}</main>
+      <nav className="tabbar" aria-label={t.nav_label}>
         {NAV.map(([href, icon, key]) => (
-          <Link key={href} href={href} className={on(href) ? "on" : ""}>
+          <Link key={href} href={href} className={on(href) ? "on" : ""} aria-current={on(href) ? "page" : undefined}>
             <Icon name={icon} size={22} />{t[key]}
           </Link>
         ))}

@@ -1,0 +1,8 @@
+# API_TOKEN=s3cret-token on both servers
+direct to API, no token            : 401
+direct to API, wrong token         : 401
+direct to API, right token         : 200
+via Next (dashboard path), no hdr  : 200
+via Next, browser sends bad token  : 200
+token present in any page or JS?   : 0
+beacon via Next still works (no token): 204

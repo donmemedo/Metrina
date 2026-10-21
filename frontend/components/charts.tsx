@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useApp } from "./shell";
 
 export const COLORS: Record<string, string> = {
@@ -9,29 +9,32 @@ export const COLORS: Record<string, string> = {
   desktop: "var(--purple)", tablet: "var(--orange)",
 };
 
-/** Eased count toward `target`; starts from 0 so first paint counts up. */
-export function useTween(target: number, ms = 900) {
-  const [v, setV] = useState(0);
-  const from = useRef(0);
+/** Eased count toward `v`, first paint counts up from 0. Writes the DOM directly: no React render per frame. Respects reduced motion. */
+export function Num({ v, compact }: { v: number; compact?: boolean }) {
+  const { f } = useApp();
+  const el = useRef<HTMLSpanElement>(null);
+  const shown = useRef(0);
+  const fmt = compact ? f.c : f.n;
   useEffect(() => {
-    const start = performance.now(), a = from.current;
+    const node = el.current!, a = shown.current;
+    // tiny changes (a poll adding a few pageviews to 200k) are set, not animated; only real movement tweens
+    if (Math.abs(v - a) < Math.max(1, Math.abs(a) * 0.005) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      shown.current = v;
+      node.textContent = fmt(v);
+      return;
+    }
+    const t0 = performance.now();
     let raf = 0;
     const step = (now: number) => {
-      const p = Math.min(1, (now - start) / ms);
-      from.current = a + (target - a) * (1 - (1 - p) ** 3);
-      setV(from.current);
+      const p = Math.min(1, (now - t0) / 900);
+      shown.current = a + (v - a) * (1 - (1 - p) ** 3);
+      node.textContent = fmt(shown.current);
       if (p < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [target, ms]);
-  return v;
-}
-
-export function Num({ v, compact }: { v: number; compact?: boolean }) {
-  const { f } = useApp();
-  const x = useTween(v);
-  return <>{compact ? f.c(x) : f.n(x)}</>;
+  }, [v, fmt]);
+  return <span ref={el}>{fmt(0)}</span>;
 }
 
 type Pt = [number, number];
@@ -67,23 +70,42 @@ type Series = (number | null)[];
 type Line = { data: Series; color: string; label: string; dashed?: boolean; fill?: boolean };
 
 /** Line/area chart. Nulls are allowed only at the ends of a series (contiguous data). */
-export function Area({ lines, band, labels, h = 230 }: { lines: Line[]; band?: { lo: Series; hi: Series; color: string }; labels: string[]; h?: number }) {
+/** Line/area chart. Also a slider: arrow keys, Home/End and touch scrub through the points, and the value is spoken. */
+export function Area({ lines, band, labels, h = 230, name = "" }: { lines: Line[]; band?: { lo: Series; hi: Series; color: string }; labels: string[]; h?: number; name?: string }) {
   const { f, lang } = useApp();
   const id = useSvgId();
   const [hover, setHover] = useState<number | null>(null);
+  const box = useRef<HTMLDivElement>(null);
   const n = labels.length;
+  const scrub = (e: { clientX: number; currentTarget: HTMLElement }) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setHover(Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) / r.width) * (n - 1)))));
+  };
   const max = Math.max(1, ...[...lines.flatMap((l) => l.data), ...(band?.hi ?? [])].filter((v): v is number => v != null)) * 1.12;
   const pct = (i: number) => (i / (n - 1 || 1)) * 100;
   const pts = (d: Series) => d.flatMap((v, i): Pt[] => (v == null ? [] : [[pct(i) * 10, h - (v / max) * h]]));
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((q) => Math.round(q * (n - 1)));
+  const move = (i: number) => setHover(Math.max(0, Math.min(n - 1, i)));
+  const at = (i: number) => lines.filter((l) => l.data[i] != null).map((l) => `${l.label} ${f.n(l.data[i]!)}`).join(", ");
+  const main = lines.find((l) => l.fill) ?? lines[0];
+  const vals = main.data.filter((v): v is number => v != null);
+  const summary = `${name}. ${main.label}: ${f.n(vals.at(-1) ?? 0)} (${f.n(Math.min(...vals))}–${f.n(Math.max(...vals))})`;
+  const keys: Record<string, (i: number) => number> = {
+    ArrowRight: (i) => i + 1, ArrowUp: (i) => i + 1, ArrowLeft: (i) => i - 1, ArrowDown: (i) => i - 1,
+    PageUp: (i) => i + 6, PageDown: (i) => i - 6, Home: () => 0, End: () => n - 1,
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") return setHover(null);
+    const go = keys[e.key];
+    if (go) (e.preventDefault(), move(go(hover ?? n - 1)));
+  };
 
   return (
-    <div className="chart"
-      onPointerMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        setHover(Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) / r.width) * (n - 1)))));
-      }}
-      onPointerLeave={() => setHover(null)}>
+    <div className="chart" role="slider" tabIndex={0} aria-label={summary} aria-valuemin={0} aria-valuemax={n - 1}
+      aria-valuenow={hover ?? n - 1} aria-valuetext={`${labels[hover ?? n - 1]}: ${at(hover ?? n - 1)}`}
+      onKeyDown={onKey} onBlur={() => setHover(null)}
+      onPointerDown={(e) => scrub(e)} onPointerMove={(e) => scrub(e)}
+      onPointerLeave={() => document.activeElement !== box.current && setHover(null)} ref={box}>
       <svg viewBox={`0 0 1000 ${h}`} preserveAspectRatio="none" style={{ height: h }} aria-hidden="true">
         <defs>
           {lines.map((l, k) => (
@@ -117,7 +139,7 @@ export function Area({ lines, band, labels, h = 230 }: { lines: Line[]; band?: {
           {lines.map((l) => l.data[hover] != null && (
             <i key={l.label} className="dot" style={{ left: `${pct(hover)}%`, top: h - (l.data[hover]! / max) * h, background: l.color }} />
           ))}
-          <div className="tip" dir={lang === "fa" ? "rtl" : "ltr"} style={{ left: `clamp(70px, ${pct(hover)}%, calc(100% - 70px))` }}>
+          <div className="tip" aria-hidden="true" dir={lang === "fa" ? "rtl" : "ltr"} style={{ left: `clamp(70px, ${pct(hover)}%, calc(100% - 70px))` }}>
             <b>{labels[hover]}</b>
             {lines.map((l) => l.data[hover] != null && (
               <div key={l.label}><i style={{ background: l.color }} />{l.label} <b>{f.n(l.data[hover]!)}</b></div>
