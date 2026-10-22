@@ -7,17 +7,17 @@
  ],
  "cpu": {
   "window_s": 3,
-  "task_ms_per_s": 145.8,
-  "script_ms_per_s": 14.6,
-  "layout_ms_per_s": 8.8,
-  "style_ms_per_s": 9.4
+  "task_ms_per_s": 60.5,
+  "script_ms_per_s": 5.3,
+  "layout_ms_per_s": 11.7,
+  "style_ms_per_s": 6.9
  },
  "targets": 21,
  "small": [
   {
    "t": "پارسلی",
    "w": 88,
-   "h": 32
+   "h": 36
   },
   {
    "t": "پیش‌خوان",

@@ -8,10 +8,10 @@
  ],
  "cpu": {
   "window_s": 3,
-  "task_ms_per_s": 293.6,
-  "script_ms_per_s": 28.1,
-  "layout_ms_per_s": 32.4,
-  "style_ms_per_s": 9.2
+  "task_ms_per_s": 351.8,
+  "script_ms_per_s": 53.9,
+  "layout_ms_per_s": 57.1,
+  "style_ms_per_s": 25.1
  },
  "targets": 21,
  "small": [],
