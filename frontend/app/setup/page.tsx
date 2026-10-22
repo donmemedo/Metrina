@@ -29,15 +29,15 @@ export default function Setup() {
             <span className="t">&lt;script</span> <span className="a">async src</span>=<span className="s">&quot;{origin}/tracker.js&quot;</span><span className="t">&gt;&lt;/script&gt;</span>
           </pre>
           <div className="actions">
-            <button className="btn" onClick={() => navigator.clipboard?.writeText(snippet).then(() => flash("copy"))}>
-              <Icon name={done === "copy" ? "check" : "copy"} size={16} />{done === "copy" ? t.copied : t.copy}
+            <button className="btn" onClick={() => navigator.clipboard?.writeText(snippet).then(() => flash("copy"), () => {})}>
+              <Icon name={done === "copy" ? "check" : "copy"} size={16} /><span aria-live="polite">{done === "copy" ? t.copied : t.copy}</span>
             </button>
             <button className="btn ghost" onClick={() =>
               fetch("/api/track", {
                 method: "POST",
                 body: JSON.stringify({ url: "/demo", title: t.test_event, referrer: "https://t.me/parsely", host: location.host }),
-              }).then((r) => r.ok && flash("sent"))}>
-              <Icon name={done === "sent" ? "check" : "send"} size={16} />{done === "sent" ? t.sent : t.test_event}
+              }).then((r) => r.ok && flash("sent"), () => {})}>
+              <Icon name={done === "sent" ? "check" : "send"} size={16} /><span aria-live="polite">{done === "sent" ? t.sent : t.test_event}</span>
             </button>
           </div>
         </section>

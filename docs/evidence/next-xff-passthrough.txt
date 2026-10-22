@@ -1,0 +1,5 @@
+# POST 5000 bytes through the Next proxy with a forged X-Forwarded-For: 9.9.9.9, then read what the API logged
+status via Next: 413
+status via Next (no forged header): 413
+security_event kind=too_large ip=9.9.9.9 path=/api/track count=1
+security_event kind=too_large ip=127.0.0.1 path=/api/track count=2

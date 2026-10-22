@@ -2,7 +2,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Area, Bars, COLORS, Donut, HBar, Num, Spark } from "@/components/charts";
-import { Icon, useApp, usePoll, type IconName } from "@/components/shell";
+import { Icon, useApp, usePoll, useSlow, type IconName } from "@/components/shell";
 import { label } from "@/lib/i18n";
 
 type Row = {
@@ -39,12 +39,14 @@ function Kpi({ i, icon, color, name, value, change, spark }: {
 export default function Dashboard() {
   const { t, f, lang } = useApp();
   const { data: d, error } = usePoll<Overview>("/api/overview", 3000);
+  const slow = useSlow(d ? { r: d.readers, p: d.pageviews } : null, 30000); // announced at most every 30 s
 
   if (!d)
     return (
       <>
-        {error != null && <div className="banner">{t.offline}</div>}
-        <div className="grid">
+        {error != null && <div className="banner" role="alert">{t.offline}</div>}
+        <div className="grid" aria-busy="true">
+          <p className="sr-only" role="status">{t.loading}</p>
           {[["s12", 300], ["s8", 340], ["s4", 340], ["s8", 480], ["s4", 480]].map(([c, h], i) => (
             <div key={i} className={`skel ${c}`} style={{ height: h }} />
           ))}
@@ -60,7 +62,8 @@ export default function Dashboard() {
 
   return (
     <>
-      {error != null && <div className="banner">{t.offline}</div>}
+      {error != null && <div className="banner" role="alert">{t.offline}</div>}
+      {slow && <p className="sr-only" role="status">{f.n(slow.r)} {t.readers_now}. {t.pageviews}: {f.n(slow.p)}</p>}
       <div className="grid">
         <section className="card hero s12 rise" style={vars({ "--i": 0 })}>
           <div>
@@ -90,7 +93,7 @@ export default function Dashboard() {
               <span><i className="dash" style={{ color: "var(--gray)" }} />{t.yesterday}</span>
             </div>
           </div>
-          <Area h={300} labels={hours} lines={[
+          <Area h={300} name={t.traffic} labels={hours} lines={[
             { data: d.prev_series, color: "var(--gray)", label: t.yesterday, dashed: true },
             { data: d.series, color: "var(--blue)", label: t.today, fill: true },
           ]} />

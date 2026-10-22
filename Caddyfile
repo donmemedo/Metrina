@@ -1,0 +1,40 @@
+# The edge: the only thing published to the host. It owns the client address, timeouts and body limits,
+# so the API can trust X-Forwarded-For (TRUST_PROXY=1) and nothing else can reach backend or frontend.
+{
+	admin off
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 15s
+			write 30s
+			idle 60s
+		}
+	}
+}
+
+# SITE_ADDRESS=:8080 serves plain HTTP (local demo). Set a real domain to get automatic HTTPS + HSTS.
+{$SITE_ADDRESS::8080} {
+	encode zstd gzip
+	request_body {
+		max_size 1MB
+	}
+	header -Server
+
+	respond /healthz 200
+
+	# API and tracker. No credentials are added here: the bundled dashboard is public, and injecting a token for every
+	# visitor would only make the token look like protection. A client that has its own API_TOKEN sends it, unchanged.
+	# To protect the dashboard, put real authentication in front first (docs/runbook.md).
+	@backend path /api/* /tracker.js
+	handle @backend {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:3000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+}

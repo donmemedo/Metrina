@@ -1,0 +1,70 @@
+{
+ "url": "http://127.0.0.1:3737/",
+ "viewport": "1440x1000",
+ "flags": [
+  "--reduce",
+  "--measure=3"
+ ],
+ "cpu": {
+  "window_s": 3,
+  "task_ms_per_s": 10.1,
+  "script_ms_per_s": 5.6,
+  "layout_ms_per_s": 0.8,
+  "style_ms_per_s": 0.5
+ },
+ "targets": 21,
+ "small": [
+  {
+   "t": "پارسلی",
+   "w": 88,
+   "h": 36
+  },
+  {
+   "t": "پیش‌خوان",
+   "w": 98,
+   "h": 36
+  },
+  {
+   "t": "صدای مخاطب",
+   "w": 120,
+   "h": 36
+  },
+  {
+   "t": "اتصال سایت",
+   "w": 110,
+   "h": 36
+  },
+  {
+   "t": "English",
+   "w": 63,
+   "h": 36
+  },
+  {
+   "t": "خودکار",
+   "w": 39,
+   "h": 36
+  },
+  {
+   "t": "روشن",
+   "w": 39,
+   "h": 36
+  },
+  {
+   "t": "تیره",
+   "w": 39,
+   "h": 36
+  }
+ ],
+ "lowContrast": [],
+ "landmarks": {
+  "nav": 2,
+  "navLabelled": 2,
+  "main": 1,
+  "current": 2,
+  "live": 1,
+  "skip": 1
+ },
+ "backdropLayers": 2,
+ "infiniteAnims": 0,
+ "consoleProblems": []
+}

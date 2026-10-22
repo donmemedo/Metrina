@@ -1,16 +1,65 @@
+name: parsely
+
+x-hardened: &hardened
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: ["/tmp:size=16m,mode=1777"]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
 services:
-  backend:
-    build: ./backend
-    ports: ["${API_PORT:-8009}:8000"]
-    restart: unless-stopped
+  edge:
+    <<: *hardened
+    image: caddy:2-alpine
+    ports: ["${WEB_PORT:-8080}:8080"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:8080}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend: { condition: service_healthy }
+      frontend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+    mem_limit: 128m
+    pids_limit: 128
+    networks: [edge, internal]
 
   frontend:
+    <<: *hardened
     build:
       context: ./frontend
       args:
         BACKEND_URL: http://backend:8000
-    ports: ["${WEB_PORT:-3009}:3000"]
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
+    tmpfs: ["/tmp:size=16m,mode=1777", "/app/.next/cache:size=64m,uid=1000,gid=1000"]
+    mem_limit: 512m
+    pids_limit: 256
+    cpus: 1.0
+    networks: [internal]
+
+  backend:
+    <<: *hardened
+    build: ./backend
+    environment:
+      TRUST_PROXY: "1"        # safe only because the edge overwrites X-Forwarded-For and nothing else can reach this service
+      API_TOKEN: ${API_TOKEN:-}  # for server-to-server callers only; leave empty while the bundled public dashboard is in use
+    mem_limit: 256m
+    pids_limit: 128
+    cpus: 1.0
+    networks: [internal]
+
+networks:
+  edge: {}
+  internal:
+    internal: true            # no route to the host or the internet; only the edge bridges both networks
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}

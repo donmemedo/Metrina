@@ -1,0 +1,8 @@
+# P6: classify() in the ORIGINAL commit 110655e
+  classify('https://netflix.com/', 'site.ir') -> x
+  classify('https://evilsite.ir/', 'site.ir') -> internal
+  classify('http://[bad','a.b') -> direct
+# P7: constant-time compare on a non-ASCII header value, as the session-1 code did it (str vs str)
+  raised TypeError -> comparing strings with non-ASCII characters is not supported
+# P8: int() on a 5000-digit Content-Length, as the session-1 guard did
+  raised ValueError -> Exceeds the limit (4300 digits) for integer string conversion: value h
